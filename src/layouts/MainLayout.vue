@@ -1,44 +1,42 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+
+    <!-- TOPO -->
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
-
+        <q-btn flat dense round icon="menu" @click="toggleLeftDrawer" aria-label="Menu" />
         <q-toolbar-title>
-          Quasar App
+          Inventário Quasar
         </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
+        <q-btn flat icon="person" @click="goToLogin" />
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
+    <!-- MENU LATERAL -->
+    <q-drawer show-if-above v-model="leftDrawerOpen" bordered>
       <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
 
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
+        <q-item-label header>Menu</q-item-label>
+
+        <q-item clickable v-ripple to="/home">
+          <q-item-section avatar><q-icon name="home" /></q-item-section>
+          <q-item-section>Início</q-item-section>
+        </q-item>
+
+        <q-item clickable v-ripple to="/itens">
+          <q-item-section avatar><q-icon name="inventory" /></q-item-section>
+          <q-item-section>Inventário</q-item-section>
+        </q-item>
+
+        <q-item clickable v-ripple to="/login">
+          <q-item-section avatar><q-icon name="login" /></q-item-section>
+          <q-item-section>Login</q-item-section>
+        </q-item>
+
       </q-list>
     </q-drawer>
 
+    <!-- CONTEÚDO PRINCIPAL -->
     <q-page-container>
       <router-view />
     </q-page-container>
@@ -46,72 +44,28 @@
 </template>
 
 <script>
-import { defineComponent, ref } from 'vue'
-import EssentialLink from 'components/EssentialLink.vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const linksList = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
-  }
-]
-
-export default defineComponent({
+export default {
   name: 'MainLayout',
+  setup () {
+    const leftDrawerOpen = ref(false)
+    const router = useRouter()
 
-  components: {
-    EssentialLink
-  },
-
-  data () {
-    return {
-      linksList,
-      leftDrawerOpen: false
+    function toggleLeftDrawer () {
+      leftDrawerOpen.value = !leftDrawerOpen.value
     }
-  },
 
-  methods: {
-    toggleLeftDrawer () {
-      this.leftDrawerOpen = !this.leftDrawerOpen
+    function goToLogin () {
+      router.push('/login')
+    }
+
+    return {
+      leftDrawerOpen,
+      toggleLeftDrawer,
+      goToLogin
     }
   }
-})
+}
 </script>
