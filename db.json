@@ -1,0 +1,57 @@
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "username": "gabriel",
+      "password": "minhasenha123",
+      "points": 0
+    },
+    {
+      "id": 2,
+      "username": "ana",
+      "password": "123456",
+      "points": 10
+    },
+    {
+      "id": "e133",
+      "username": "Gabrielfatias",
+      "password": "123456",
+      "points": 0
+    },
+    {
+      "id": "6841",
+      "username": "Gabriel",
+      "password": "986489521",
+      "points": 80
+    },
+    {
+      "id": "26cc",
+      "username": "gvgh",
+      "password": "hjb",
+      "points": 20
+    }
+  ],
+  "itens": [
+    {
+      "id": "54b9",
+      "name": "gvgh",
+      "category": "hjb",
+      "quantity": 1,
+      "userId": "e133"
+    },
+    {
+      "id": "b090",
+      "name": "item",
+      "category": "item",
+      "quantity": 3,
+      "userId": "e133"
+    },
+    {
+      "id": "6024",
+      "name": "item",
+      "category": "item",
+      "quantity": 3,
+      "userId": "e133"
+    }
+  ]
+}
