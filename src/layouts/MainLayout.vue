@@ -23,7 +23,7 @@
           <q-item-section>Início</q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple to="/itens">
+        <q-item clickable v-ripple to="/inventario">
           <q-item-section avatar><q-icon name="inventory" /></q-item-section>
           <q-item-section>Inventário</q-item-section>
         </q-item>

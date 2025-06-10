@@ -4,6 +4,9 @@
       <q-card-section>
         <div class="text-h5 text-primary">Inventário de Itens</div>
         <div class="text-subtitle2">Gerencie seus itens abaixo:</div>
+        <div class="q-mt-sm text-caption">
+          Usuário: <strong>{{ currentUser }}</strong> • Pontos: <strong>{{ userData.points }}</strong>
+        </div>
       </q-card-section>
 
       <q-separator class="q-my-sm" />
@@ -22,14 +25,14 @@
       <q-card-section>
         <div v-if="items.length === 0" class="text-grey text-center">Nenhum item no inventário.</div>
         <q-list bordered v-else>
-          <q-item v-for="(item, index) in items" :key="index">
+          <q-item v-for="item in items" :key="item.id">
             <q-item-section>
               <q-item-label>{{ item.name }} ({{ item.category }})</q-item-label>
               <q-item-label caption>Quantidade: {{ item.quantity }}</q-item-label>
             </q-item-section>
             <q-item-section side>
-              <q-btn flat icon="edit" color="primary" @click="editItem(index)" />
-              <q-btn flat icon="delete" color="negative" @click="deleteItem(index)" />
+              <q-btn flat icon="edit" color="primary" @click="editItem(item)" />
+              <q-btn flat icon="delete" color="negative" @click="deleteItem(item)" />
             </q-item-section>
           </q-item>
         </q-list>
@@ -48,7 +51,7 @@
           <q-input filled v-model.number="editItemData.quantity" type="number" label="Quantidade" dense class="q-mt-sm" />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="Cancelar" v-close-popup />
+          <q-btn flat label="Cancelar" v-close-popup @click="editDialog = false" />
           <q-btn flat label="Salvar" color="primary" @click="saveEdit" />
         </q-card-actions>
       </q-card>
@@ -57,11 +60,15 @@
 </template>
 
 <script>
-import { defineComponent, ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import api from 'src/services/api'
 
-export default defineComponent({
+export default {
   name: 'ItensPage',
   setup() {
+    const currentUser = ref('')
+    const userData = reactive({ points: 0 })
+
     const newItem = reactive({
       name: '',
       category: '',
@@ -70,59 +77,120 @@ export default defineComponent({
 
     const items = ref([])
 
-    function loadItems() {
-      const saved = localStorage.getItem('inventory')
-      items.value = saved ? JSON.parse(saved) : []
-    }
-
-    function saveItems() {
-      localStorage.setItem('inventory', JSON.stringify(items.value))
-    }
-
-    function addItem() {
-      items.value.push({ ...newItem })
-      saveItems()
-      newItem.name = ''
-      newItem.category = ''
-      newItem.quantity = 1
-    }
-
-    const canAdd = computed(() =>
-      newItem.name.trim() !== '' && newItem.category.trim() !== '' && newItem.quantity > 0
-    )
-
-    function deleteItem(index) {
-      items.value.splice(index, 1)
-      saveItems()
-    }
-
-    // Editar item
     const editDialog = ref(false)
-    const editIndex = ref(null)
     const editItemData = reactive({
+      id: null,
       name: '',
       category: '',
       quantity: 1
     })
 
-    function editItem(index) {
-      const item = items.value[index]
-      editIndex.value = index
+    function resetNewItem() {
+      newItem.name = ''
+      newItem.category = ''
+      newItem.quantity = 1
+    }
+
+    async function loadItems() {
+      try {
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}')
+        currentUser.value = user.username || ''
+        userData.points = user.points || 0
+
+        if (!user.id) {
+          console.warn('Usuário não encontrado no localStorage')
+          return
+        }
+
+        const response = await api.get(`/itens?userId=${user.id}`)
+        items.value = response.data
+      } catch (error) {
+        console.error('Erro ao carregar itens:', error)
+      }
+    }
+
+    // Função para atualizar pontos do usuário
+    async function updateUserPoints(pointsToAdd) {
+      const user = JSON.parse(localStorage.getItem('currentUser'))
+      if (!user) return
+
+      user.points = (user.points || 0) + pointsToAdd
+
+      try {
+        const response = await api.put(`/usuarios/${user.id}`, user)
+        localStorage.setItem('currentUser', JSON.stringify(response.data))
+        userData.points = response.data.points // atualiza reactive local
+      } catch (error) {
+        console.error('Erro ao atualizar pontos:', error)
+      }
+    }
+
+    async function addItem() {
+      try {
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}')
+        if (!user.id) {
+          console.warn('Usuário não encontrado ao adicionar item')
+          return
+        }
+
+        const payload = { ...newItem, userId: user.id }
+        const response = await api.post('/itens', payload)
+        items.value.push(response.data)
+        resetNewItem()
+
+        await updateUserPoints(10) // adiciona 10 pontos por adicionar item
+      } catch (error) {
+        console.error('Erro ao adicionar item:', error)
+      }
+    }
+
+    async function deleteItem(item) {
+      try {
+        await api.delete(`/itens/${item.id}`)
+        items.value = items.value.filter(i => i.id !== item.id)
+
+        await updateUserPoints(10) // adiciona 10 pontos por remover item
+      } catch (error) {
+        console.error('Erro ao excluir item:', error)
+      }
+    }
+
+    function editItem(item) {
       Object.assign(editItemData, item)
       editDialog.value = true
     }
 
-    function saveEdit() {
-      if (editIndex.value !== null) {
-        items.value[editIndex.value] = { ...editItemData }
-        saveItems()
+    async function saveEdit() {
+      try {
+        const response = await api.put(`/itens/${editItemData.id}`, {
+          name: editItemData.name,
+          category: editItemData.category,
+          quantity: editItemData.quantity
+        })
+
+        const index = items.value.findIndex(i => i.id === editItemData.id)
+        if (index !== -1) {
+          items.value[index] = response.data
+        }
         editDialog.value = false
+
+        await updateUserPoints(5) // adiciona 5 pontos por editar item
+      } catch (error) {
+        console.error('Erro ao editar item:', error)
       }
     }
 
-    loadItems()
+    const canAdd = computed(() =>
+      newItem.name.trim() !== '' &&
+      newItem.category.trim() !== '' &&
+      newItem.quantity > 0
+    )
+
+    onMounted(loadItems)
 
     return {
+      currentUser,
+      userData,
       newItem,
       items,
       addItem,
@@ -134,5 +202,5 @@ export default defineComponent({
       canAdd
     }
   }
-})
+}
 </script>
